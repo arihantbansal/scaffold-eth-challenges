@@ -5,31 +5,63 @@ import "hardhat/console.sol";
 import "./ExampleExternalContract.sol";
 
 contract Staker {
+    ExampleExternalContract public exampleExternalContract;
 
-  ExampleExternalContract public exampleExternalContract;
+    mapping(address => uint256) public balances;
+    uint256 public constant threshold = 1 ether;
+    uint256 public deadline = block.timestamp + 72 hours;
+    bool public openForWithdraw = false;
 
-  constructor(address exampleExternalContractAddress) public {
-      exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
-  }
+    event Stake(address, uint256);
 
-  // Collect funds in a payable `stake()` function and track individual `balances` with a mapping:
-  //  ( make sure to add a `Stake(address,uint256)` event and emit it for the frontend <List/> display )
+    modifier claimDeadlineReached() {
+        require(block.timestamp > deadline, "Deadline has not been reached");
+        _;
+    }
 
+    modifier notCompleted() {
+        bool completed = exampleExternalContract.completed();
+        require(!completed, "Stake already completed!");
+        _;
+    }
 
-  // After some `deadline` allow anyone to call an `execute()` function
-  //  It should either call `exampleExternalContract.complete{value: address(this).balance}()` to send all the value
+    modifier withdrawAllowed() {
+        require(openForWithdraw, "Withdrawal is not allowed");
+        _;
+    }
 
+    constructor(address exampleExternalContractAddress) public {
+        exampleExternalContract = ExampleExternalContract(
+            exampleExternalContractAddress
+        );
+    }
 
-  // if the `threshold` was not met, allow everyone to call a `withdraw()` function
+    function stake() public payable {
+        require(msg.value > 0, "Please stake some ether");
+        balances[msg.sender] += msg.value;
+        emit Stake(msg.sender, msg.value);
+    }
 
+    function execute() public claimDeadlineReached notCompleted {
+        if (address(this).balance > threshold) {
+            exampleExternalContract.complete{value: address(this).balance}();
+        } else {
+            openForWithdraw = true;
+        }
+    }
 
-  // Add a `withdraw()` function to let users withdraw their balance
+    function timeLeft() public view returns (uint256) {
+        if (block.timestamp >= deadline) return 0;
+        return deadline - block.timestamp;
+    }
 
+    function withdraw() public withdrawAllowed notCompleted {
+        payable(msg.sender).transfer(balances[msg.sender]);
+    }
 
-  // Add a `timeLeft()` view function that returns the time left before the deadline for the frontend
+    // Add the `receive()` special function that receives eth and calls stake()
 
-
-  // Add the `receive()` special function that receives eth and calls stake()
-
-
+    receive() external payable {
+        stake();
+    }
 }
