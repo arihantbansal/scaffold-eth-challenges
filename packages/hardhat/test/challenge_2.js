@@ -1,4 +1,3 @@
-//
 // this script executes when you run 'yarn test'
 //
 // you can also test remote submissions like:
