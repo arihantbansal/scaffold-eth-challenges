@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 const { ethers } = require("hardhat");
 
 const localChainId = "31337";
@@ -9,19 +10,17 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
 
   const diceGame = await ethers.getContract("DiceGame", deployer);
 
-  /*
   await deploy("RiggedRoll", {
-   from: deployer,
-   args: [diceGame.address],
-   log: true,
+    from: deployer,
+    args: [diceGame.address],
+    log: true,
   });
-  */
 
-  //const riggedRoll = await ethers.getContract("RiggedRoll", deployer);
+  const riggedRoll = await ethers.getContract("RiggedRoll", deployer);
 
-  //const ownershipTransaction = await riggedRoll.transferOwnership("** YOUR FRONTEND ADDRESS **");
-  
-
+  const ownershipTransaction = await riggedRoll.transferOwnership(
+    "0x9aE3e80B9bD449bc0Be2978233FdDd9B4BA30601"
+  );
 };
 
 function sleep(ms) {
